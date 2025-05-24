@@ -1,14 +1,37 @@
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class KafkaChecker {
 
-    public static <T> void findMessagesByPartitialMessage(T target, List<T> objectList, Integer count) {
-        List<T> matches = findMessagesByPartitialMessage(target, objectList);
-        Assertions.assertEquals(count, matches.size());
+    /**
+     * Возвращает список объектов, которые частично совпадают с искомым объектом.
+     * Из минусов - отсутствует возможность явной проверки на нулл.
+     *
+     * @param target     Искомый объект (частично заполненный).
+     * @param objectList Список объектов для фильтрации.
+     * @param <T>        Тип объектов.
+     * @param count      Количество совпадений.
+     * @return Список объектов, которые совпадают по частично заполненным полям искомого объекта.
+     */
+    public static <T> List<T> findMessagesByPartitialMessage(T target, List<T> objectList, Integer count) {
+        List<T> results = new ArrayList<>();
+        Awaitility.await("Ожидание совпадений...")
+                .pollInterval(200, MILLISECONDS)
+                .timeout(1, SECONDS)
+                .untilAsserted(() -> {
+                    List<T> matches = findMessagesByPartitialMessage(target, objectList);
+                    System.out.println("Найдено совпадений: " + matches.size());
+                    Assertions.assertEquals(count, matches.size(), "Количество ожидаемых сообщение в топике не совпадает");
+                    results.addAll(matches);
+                });
+        return results;
     }
 
     /**
@@ -106,25 +129,27 @@ public class KafkaChecker {
             return false;
         }
 
-        for (int i = 0; i < partialList.size(); i++) {
-            Object partialItem = partialList.get(i);
-            Object fullItem = fullList.get(i);
+        // Теперь ищем каждый элемент partialList где угодно в fullList
+        for (Object partialItem : partialList) {
+            boolean matchFound = false;
+            for (Object fullItem : fullList) {
+                if (fullItem == null && partialItem == null) {
+                    matchFound = true;
+                    break;
+                }
+                if (fullItem == null || partialItem == null) continue;
 
-            // Если элемент в partialList равен null, его игнорируем
-            if (partialItem == null) {
-                continue;
-            }
-
-            // Если элемент является сложным объектом, рекурсивно проверяем его
-            if (isComplexObject(partialItem)) {
-                if (!areObjectsPartiallyEqual(partialItem, fullItem)) {
-                    return false;
+                if (isComplexObject(partialItem)) {
+                    if (areObjectsPartiallyEqual(partialItem, fullItem)) {
+                        matchFound = true;
+                        break;
+                    }
+                } else if (partialItem.equals(fullItem)) {
+                    matchFound = true;
+                    break;
                 }
             }
-            // Для простых типов используем equals()
-            else if (!partialItem.equals(fullItem)) {
-                return false;
-            }
+            if (!matchFound) return false;
         }
 
         return true;

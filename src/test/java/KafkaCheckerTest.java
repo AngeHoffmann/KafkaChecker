@@ -13,25 +13,78 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KafkaCheckerTest {
 
-    // 1. Тест на полное совпадение
-    @Test
-    public void testExactMatch() {
-        // Создаем адреса
+    private static UserInfo createJohnDoeUser() {
         Address address1 = new Address("123 Main St", "New York", "10001");
         Address address2 = new Address("456 Elm St", "Los Angeles", "90001");
         List<Address> addresses = Arrays.asList(address1, address2);
-
-        // Создаем телефоны
         Phone phone1 = new Phone("home", "7999999999", null);
         Phone phone2 = new Phone("work", "7000000000", new ArrayList<>());
         List<Phone> phones = Arrays.asList(phone1, phone2);
+        return new UserInfo(1, "John Doe", addresses, phones);
+    }
 
+    private static UserInfo createJohnDoeTrueUser() {
+        Address address1 = new Address("123 Main St", "New York", "10001");
+        Address address2 = new Address("456 Elm St", "Los Angeles", "90001");
+        Address address3 = new Address("789 Gg St", "Wonderland", "11111");
+        List<Address> addresses = Arrays.asList(address1, address2, address3);
+        Phone phone1 = new Phone("home", "7999999999", null);
+        Phone phone2 = new Phone("work", "7000000001", new ArrayList<>());
+        List<Phone> phones = Arrays.asList(phone1, phone2);
+        return new UserInfo(1, "John Doe", addresses, phones);
+    }
+
+    private static UserInfo createTarget() {
+        Address address = new Address("789 Gg St", "Wonderland", "11111");
+        List<Address> addresses = Arrays.asList(address);
+        Phone phone = new Phone(null, "7000000001", null);
+        List<Phone> phones = Arrays.asList(phone);
+        return new UserInfo(1, "John Doe", addresses, phones);
+    }
+
+    private static UserInfo createTarget2() {
+        Address address = new Address("789 Gg St", "Wonderland", "11111");
+        Address address2 = new Address("456 Elm St", "Los Angeles", "90001");
+        List<Address> addresses = Arrays.asList(address, address2);
+        Phone phone = new Phone(null, "7000000001", null);
+        List<Phone> phones = Arrays.asList(phone);
+        return new UserInfo(1, "John Doe", addresses, phones);
+    }
+
+    // Тест на поиск частичных совпадений в списке
+    @Test
+    public void testDebug() {
+        UserInfo user1 = createJohnDoeUser();
+        UserInfo user2 = createJohnDoeTrueUser();
+        List<UserInfo> userInfoList = Arrays.asList(user1, user2);
+
+        UserInfo targetUser = createTarget();
+
+        List<UserInfo> matches = KafkaChecker.findMessagesByPartitialMessage(targetUser, userInfoList, 1);
+    }
+
+    // Тест на поиск частичных совпадений в списке по нескольким обьектам в списке из таргета
+    @Test
+    public void testDebug2() {
+        UserInfo user1 = createJohnDoeUser();
+        UserInfo user2 = createJohnDoeTrueUser();
+        List<UserInfo> userInfoList = Arrays.asList(user1, user2);
+
+        UserInfo targetUser = createTarget2();
+
+        List<UserInfo> matches = KafkaChecker.findMessagesByPartitialMessage(targetUser, userInfoList, 1);
+    }
+
+
+    // 1. Тест на полное совпадение
+    @Test
+    public void testExactMatch() {
         // Создаем пользователей
-        UserInfo user1 = new UserInfo(1, "John Doe", addresses, phones);
+        UserInfo user1 = createJohnDoeUser();
         List<UserInfo> userInfoList = Arrays.asList(user1);
 
         // Искомый пользователь полностью совпадает
-        UserInfo targetUser = new UserInfo(1, "John Doe", addresses, phones);
+        UserInfo targetUser = createJohnDoeUser();
 
         // Фильтруем список
         List<UserInfo> matches = KafkaChecker.findMessagesByPartitialMessage(targetUser, userInfoList);
@@ -46,18 +99,8 @@ public class KafkaCheckerTest {
     // 2. Тест на частичное совпадение по имени
     @Test
     public void testPartialMatchByName() {
-        // Создаем адреса
-        Address address1 = new Address("123 Main St", "New York", "10001");
-        Address address2 = new Address("456 Elm St", "Los Angeles", "90001");
-        List<Address> addresses = Arrays.asList(address1, address2);
-
-        // Создаем телефоны
-        Phone phone1 = new Phone("home", "7999999999", null);
-        Phone phone2 = new Phone("work", "7000000000", new ArrayList<>());
-        List<Phone> phones = Arrays.asList(phone1, phone2);
-
         // Создаем пользователей
-        UserInfo user1 = new UserInfo(1, "John Doe", addresses, phones);
+        UserInfo user1 = createJohnDoeUser();
         UserInfo user2 = new UserInfo(2, "Jane Smith", null, null);
         List<UserInfo> userInfoList = Arrays.asList(user1, user2);
 
@@ -77,18 +120,8 @@ public class KafkaCheckerTest {
     // 3. Тест на частичное совпадение по адресу
     @Test
     public void testPartialMatchByAddress() {
-        // Создаем адреса
-        Address address1 = new Address("123 Main St", "New York", "10001");
-        Address address2 = new Address("456 Elm St", "Los Angeles", "90001");
-        List<Address> addresses = Arrays.asList(address1, address2);
-
-        // Создаем телефоны
-        Phone phone1 = new Phone("home", "7999999999", null);
-        Phone phone2 = new Phone("work", "7000000000", new ArrayList<>());
-        List<Phone> phones = Arrays.asList(phone1, phone2);
-
         // Создаем пользователей
-        UserInfo user1 = new UserInfo(1, "John Doe", addresses, phones);
+        UserInfo user1 = createJohnDoeUser();
         UserInfo user2 = new UserInfo(2, "Jane Smith", null, null);
         List<UserInfo> userInfoList = Arrays.asList(user1, user2);
 

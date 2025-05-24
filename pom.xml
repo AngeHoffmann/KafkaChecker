@@ -26,6 +26,11 @@
             <version>5.9.3</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.2.0</version>
+        </dependency>
     </dependencies>
 
 </project>
